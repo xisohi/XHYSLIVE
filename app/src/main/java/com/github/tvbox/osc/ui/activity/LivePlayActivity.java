@@ -28,7 +28,7 @@ import com.github.tvbox.osc.util.AppManager;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
-
+import android.os.Bundle;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.R;
