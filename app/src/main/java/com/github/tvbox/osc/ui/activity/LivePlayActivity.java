@@ -1,7 +1,7 @@
 package com.github.tvbox.osc.ui.activity;
 
 import static com.github.tvbox.osc.util.RegexUtils.getPattern;
-
+import android.content.Intent;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -1761,7 +1761,7 @@ public class LivePlayActivity extends BaseActivity {
 
     private void clickSettingItem(int position) {
         int settingGroupIndex = liveSettingGroupAdapter.getSelectedGroupIndex();
-        if (settingGroupIndex < 4) {
+        if (settingGroupIndex < 6) { // 修改条件，原来是4，现在改为6
             if (position == liveSettingItemAdapter.getSelectedItemIndex())
                 return;
             liveSettingItemAdapter.selectItem(position, true, true);
@@ -1821,11 +1821,24 @@ public class LivePlayActivity extends BaseActivity {
                 ApiConfig.get().loadLiveApi(livesOBJ);
                 recreate();
                 return;
+            case 6: // !!! 系统设置 !!!
+                // 跳转到系统设置页面
+                jumpToSystemSettings();
+                break;
         }
         mHandler.removeCallbacks(mHideSettingLayoutRun);
         mHandler.postDelayed(mHideSettingLayoutRun, postTimeout);
     }
+    // 跳转到系统设置
+    private void jumpToSystemSettings() {
+        // 隐藏设置面板
+        mHandler.removeCallbacks(mHideSettingLayoutRun);
+        mHandler.post(mHideSettingLayoutRun);
 
+        // 跳转到系统设置页面
+        Intent intent = new Intent(this, SettingActivity.class);
+        startActivity(intent);
+    }
     private void initLiveChannelList() {
         List<LiveChannelGroup> list = ApiConfig.get().getChannelGroupList();
         if (list.isEmpty()) {
@@ -2020,13 +2033,27 @@ public class LivePlayActivity extends BaseActivity {
     }
 
     private void initLiveSettingGroupList() {
-        liveSettingGroupList=ApiConfig.get().getLiveSettingGroupList();
+        liveSettingGroupList = ApiConfig.get().getLiveSettingGroupList();
         liveSettingGroupList.get(3).getLiveSettingItems().get(Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 1)).setItemSelected(true);
         liveSettingGroupList.get(4).getLiveSettingItems().get(0).setItemSelected(Hawk.get(HawkConfig.LIVE_SHOW_TIME, false));
         liveSettingGroupList.get(4).getLiveSettingItems().get(1).setItemSelected(Hawk.get(HawkConfig.LIVE_SHOW_NET_SPEED, false));
         liveSettingGroupList.get(4).getLiveSettingItems().get(2).setItemSelected(Hawk.get(HawkConfig.LIVE_CHANNEL_REVERSE, false));
         liveSettingGroupList.get(4).getLiveSettingItems().get(3).setItemSelected(Hawk.get(HawkConfig.LIVE_CROSS_GROUP, false));
         liveSettingGroupList.get(5).getLiveSettingItems().get(Hawk.get(HawkConfig.LIVE_GROUP_INDEX, 0)).setItemSelected(true);
+
+        // !!! 添加系统设置分组 !!!
+        LiveSettingGroup systemSettingGroup = new LiveSettingGroup();
+        systemSettingGroup.setGroupIndex(6); // 新的分组索引
+        systemSettingGroup.setGroupName("系统设置");
+
+        ArrayList<LiveSettingItem> systemSettingItems = new ArrayList<>();
+        LiveSettingItem systemSettingItem = new LiveSettingItem();
+        systemSettingItem.setItemIndex(0);
+        systemSettingItem.setItemName("系统设置");
+        systemSettingItems.add(systemSettingItem);
+
+        systemSettingGroup.setLiveSettingItems(systemSettingItems);
+        liveSettingGroupList.add(systemSettingGroup);
     }
 
     private void loadCurrentSourceList() {
