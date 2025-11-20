@@ -309,20 +309,12 @@ public class HomeActivity extends BaseActivity {
     private boolean jarInitOk = false;
 
     private void initData() {
+        // !!! 修改：直接跳转到直播，不加载点播数据 !!!
         if (dataInitOk && jarInitOk) {
-            sourceViewModel.getSort(ApiConfig.get().getHomeSourceBean().getKey());
-            if (hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                LOG.e("有");
-            } else {
-                LOG.e("无");
-            }
-            // !!! 修改这里：强制跳转到直播，移除条件判断 !!!
-            if (!useCacheConfig) {
-                jumpActivity(LivePlayActivity.class);
-                return; // 添加return，确保跳转后不再执行后续代码
-            }
+            jumpActivity(LivePlayActivity.class);
             return;
         }
+
         tvNameAnimation();
         showLoading();
         if (dataInitOk && !jarInitOk) {
@@ -334,8 +326,8 @@ public class HomeActivity extends BaseActivity {
                         mHandler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
-//                                if (!useCacheConfig) Toast.makeText(HomeActivity.this, "自定义jar加载成功", Toast.LENGTH_SHORT).show();
-                                initData();
+                                // 初始化完成后跳转到直播
+                                jumpActivity(LivePlayActivity.class);
                             }
                         }, 50);
                     }
@@ -358,7 +350,7 @@ public class HomeActivity extends BaseActivity {
                             @Override
                             public void run() {
                                 Toast.makeText(HomeActivity.this, msg+"; 尝试加载最近一次的jar", Toast.LENGTH_SHORT).show();
-                                initData();
+                                jumpActivity(LivePlayActivity.class);
                             }
                         },50);
                     }
@@ -388,7 +380,8 @@ public class HomeActivity extends BaseActivity {
                 mHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        initData();
+                        // 初始化完成后跳转到直播
+                        jumpActivity(LivePlayActivity.class);
                     }
                 }, 50);
             }
@@ -401,7 +394,7 @@ public class HomeActivity extends BaseActivity {
                         public void run() {
                             dataInitOk = true;
                             jarInitOk = true;
-                            initData();
+                            jumpActivity(LivePlayActivity.class);
                         }
                     });
                     return;
@@ -429,7 +422,7 @@ public class HomeActivity extends BaseActivity {
                                     mHandler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                            initData();
+                                            jumpActivity(LivePlayActivity.class);
                                             dialog.hide();
                                         }
                                     });
@@ -442,7 +435,7 @@ public class HomeActivity extends BaseActivity {
                                     mHandler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                            initData();
+                                            jumpActivity(LivePlayActivity.class);
                                             dialog.hide();
                                         }
                                     });
