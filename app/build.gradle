@@ -5,7 +5,7 @@ android {
 
     defaultConfig {
         // 修改包名，使小米系统可以安装
-        applicationId 'com.github.tvbox.osc.xhystv'
+        applicationId 'com.github.tvbox.osc.xhyslive'
         targetSdkVersion 28
         versionCode 1
         versionName '1.0.0'
