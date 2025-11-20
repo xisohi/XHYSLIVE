@@ -7,7 +7,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
+import android.content.Intent;
 import androidx.viewpager.widget.ViewPager;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
@@ -179,6 +179,14 @@ public class SettingActivity extends BaseActivity {
 
     @Override
     public void onBackPressed() {
+        // !!! 修改：直接返回到直播页面，而不是主页 !!!
+        Intent intent = new Intent(this, LivePlayActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
+
+        // 注释掉原来的跳转逻辑
+        /*
         if (currentApi.equals(Hawk.get(HawkConfig.API_URL, ""))) {
             if(dnsOpt != Hawk.get(HawkConfig.DOH_URL, 0)){
                 AppManager.getInstance().finishAllActivity();
@@ -194,7 +202,32 @@ public class SettingActivity extends BaseActivity {
             jumpActivity(HomeActivity.class);
         }
         super.onBackPressed();
+        */
     }
+
+    // 如果需要保留原有的部分逻辑，可以这样修改：
+    /*
+    @Override
+    public void onBackPressed() {
+        // 如果有重大配置变更需要重启应用，则走原有逻辑
+        if (!currentApi.equals(Hawk.get(HawkConfig.API_URL, "")) || 
+            dnsOpt != Hawk.get(HawkConfig.DOH_URL, 0) ||
+            (homeSourceKey != null && !homeSourceKey.equals(Hawk.get(HawkConfig.HOME_API, ""))) ||
+            homeRec != Hawk.get(HawkConfig.HOME_REC, 0) ||
+            !currentLiveApi.equals(Hawk.get(HawkConfig.LIVE_API_URL, ""))) {
+            
+            // 重大配置变更，需要重启应用
+            AppManager.getInstance().finishAllActivity();
+            jumpActivity(HomeActivity.class);
+        } else {
+            // 普通设置变更，直接回到直播页面
+            Intent intent = new Intent(this, LivePlayActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        }
+    }
+    */
 
     private Bundle createBundle() {
         Bundle bundle = new Bundle();
