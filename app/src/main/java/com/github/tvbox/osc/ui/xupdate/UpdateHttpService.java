@@ -16,6 +16,12 @@ import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
 
+import okhttp3.OkHttpClient;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * @version 1.0
@@ -24,16 +30,25 @@ import java.util.TreeMap;
  */
 public class UpdateHttpService implements IUpdateHttpService {
     public static String baseUrl = Constants.UPDATE_URL;
+    private OkHttpClient customOkHttpClient;
 
     public UpdateHttpService() {
+        this.customOkHttpClient = createCustomOkHttpClient();
+    }
+
+    public UpdateHttpService setOkHttpClient(OkHttpClient okHttpClient) {
+        this.customOkHttpClient = okHttpClient;
+        return this;
     }
 
     @Override
     public void asyncGet(@NonNull String url, @NonNull Map<String, Object> params, final @NonNull Callback callBack) {
 //        Log.e("XUpdate", "asyncGet--- " + url);
 
+        // 使用自定义的 OkHttpClient 创建 OkGo 实例
         OkGo.<String>get(url)
                 .params(transform(params))
+                .client(customOkHttpClient) // 使用自定义客户端
                 .execute(new StringCallback() {
                     @Override
                     public void onSuccess(Response<String> response) {
@@ -55,6 +70,7 @@ public class UpdateHttpService implements IUpdateHttpService {
         //Log.e("XUpdate", "asyncPost--- " + url);
         OkGo.<String>post(url)
                 .params(transform(params))
+                .client(customOkHttpClient) // 使用自定义客户端
                 .execute(new StringCallback() {
                     @Override
                     public void onSuccess(Response<String> response) {
@@ -79,6 +95,7 @@ public class UpdateHttpService implements IUpdateHttpService {
 //        Log.e("XUpdate", "download--- " + fileName);
         OkGo.<File>get(url)
                 .tag(url)                    // 请求的 tag, 主要用于取消对应的请求
+                .client(customOkHttpClient) // 使用自定义客户端
                 .execute(new FileCallback(path, fileName) {
                     @Override
                     public void downloadProgress(Progress progress) {
@@ -148,4 +165,46 @@ public class UpdateHttpService implements IUpdateHttpService {
         }
     }
 
+    /**
+     * 创建自定义的 OkHttpClient 以解决 SSL/TLS 握手问题
+     */
+    private OkHttpClient createCustomOkHttpClient() {
+        try {
+            // 创建信任所有证书的 TrustManager
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+            };
+
+            // 安装 TrustManager
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+            // 创建 OkHttpClient 并配置
+            return new OkHttpClient.Builder()
+                    .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAllCerts[0])
+                    .hostnameVerifier((hostname, session) -> true) // 跳过主机名验证
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build();
+
+        } catch (Exception e) {
+            Log.e("UpdateHttpService", "创建自定义OkHttpClient失败: " + e.getMessage());
+            // 如果创建失败，返回默认的客户端
+            return OkGo.getInstance().getOkHttpClient();
+        }
+    }
 }

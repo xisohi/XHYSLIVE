@@ -33,6 +33,7 @@ import com.lzy.okgo.OkGo;
 import android.content.Context;
 import android.os.Environment;
 import android.widget.Toast;
+
 /**
  * @author pj567
  * @date :2020/12/17
@@ -135,6 +136,7 @@ public class App extends MultiDexApplication {
     public String getDashData() {
         return dashData;
     }
+
     /**
      * 初始化更新组件服务
      */
@@ -155,9 +157,10 @@ public class App extends MultiDexApplication {
                     } //设置版本更新出错的监听
                 })
                 .supportSilentInstall(false) //设置是否支持静默安装，默认是true
-                .setIUpdateHttpService(new UpdateHttpService()) // 实现网络请求功能。
+                .setIUpdateHttpService(new UpdateHttpService()) // 使用修改后的UpdateHttpService
                 .init(this); // 这个必须初始化
     }
+
     /**
      * 获取cache路径
      */
