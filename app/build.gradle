@@ -69,7 +69,7 @@ android {
         variant.outputs.configureEach { output ->
             def flavorNames = variant.productFlavors.collect { it.name == "normal" ? "java" : it.name }.join('-')
             // 构建自定义文件名
-            def fileName = "XHYSTV-${flavorNames}.apk"
+            def fileName = "XHYSLIVE-${flavorNames}.apk"
             outputFileName = fileName
         }
     }
