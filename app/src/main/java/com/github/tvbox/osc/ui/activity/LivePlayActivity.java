@@ -24,7 +24,7 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.github.tvbox.osc.util.AppManager;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -209,7 +209,7 @@ public class LivePlayActivity extends BaseActivity {
     // 遥控器数字键输入的要切换的频道号码
     private int selectedChannelNumber = 0;
     private TextView tvSelectedChannel;
-
+    private long mExitTime = 0;
 
     @Override
     protected int getLayoutResID() {
@@ -616,7 +616,6 @@ public class LivePlayActivity extends BaseActivity {
         divLoadEpg.setVisibility(View.VISIBLE);
     }
 
-
     @Override
     public void onBackPressed() {
         if (tvLeftChannelListLayout.getVisibility() == View.VISIBLE) {
@@ -625,17 +624,26 @@ public class LivePlayActivity extends BaseActivity {
         } else if (tvRightSettingLayout.getVisibility() == View.VISIBLE) {
             mHandler.removeCallbacks(mHideSettingLayoutRun);
             mHandler.post(mHideSettingLayoutRun);
-        } else if( backcontroller.getVisibility() == View.VISIBLE){ //
+        } else if( backcontroller.getVisibility() == View.VISIBLE) {
             backcontroller.setVisibility(View.GONE);
-        }else if(isBack){
-            isBack= false;
+        } else if(isBack) {
+            isBack = false;
             playPreSource();
-        }else {
+        } else {
+            // !!! 修改：直接退出App，而不是返回主页 !!!
             mHandler.removeCallbacks(mConnectTimeoutChangeSourceRun);
             mHandler.removeCallbacks(mUpdateNetSpeedRun);
-            super.onBackPressed();
+
+            // 方案二：再按一次退出提示
+            if (System.currentTimeMillis() - mExitTime < 2000) {
+                AppManager.getInstance().finishAllActivity();
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(0);
+            } else {
+                mExitTime = System.currentTimeMillis();
+                Toast.makeText(this, "再按一次返回键退出应用", Toast.LENGTH_SHORT).show();
+            }
         }
-    }
 
     private final Runnable mPlaySelectedChannel = new Runnable() {
         @Override
