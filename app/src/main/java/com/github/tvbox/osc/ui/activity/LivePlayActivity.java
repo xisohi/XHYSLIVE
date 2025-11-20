@@ -644,7 +644,7 @@ public class LivePlayActivity extends BaseActivity {
                 Toast.makeText(this, "再按一次返回键退出应用", Toast.LENGTH_SHORT).show();
             }
         }
-
+    }
     private final Runnable mPlaySelectedChannel = new Runnable() {
         @Override
         public void run() {
