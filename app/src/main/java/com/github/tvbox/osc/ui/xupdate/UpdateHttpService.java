@@ -16,10 +16,13 @@ import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
 
+import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
+import okhttp3.TlsVersion;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 
@@ -43,23 +46,22 @@ public class UpdateHttpService implements IUpdateHttpService {
 
     @Override
     public void asyncGet(@NonNull String url, @NonNull Map<String, Object> params, final @NonNull Callback callBack) {
-//        Log.e("XUpdate", "asyncGet--- " + url);
+        Log.e("XUpdate", "asyncGet--- " + url);
 
-        // 使用自定义的 OkHttpClient 创建 OkGo 实例
         OkGo.<String>get(url)
                 .params(transform(params))
                 .client(customOkHttpClient) // 使用自定义客户端
                 .execute(new StringCallback() {
                     @Override
                     public void onSuccess(Response<String> response) {
-                        //Log.e("XUpdate", "--- " + response);
+                        Log.e("XUpdate", "asyncGet success--- " + response.body());
                         callBack.onSuccess(response.body());
                     }
 
                     @Override
                     public void onError(Response<String> response) {
                         super.onError(response);
-                        //Log.e("XUpdate", "onError--- " + response);
+                        Log.e("XUpdate", "asyncGet onError--- " + response.getException());
                         callBack.onError(response.getException());
                     }
                 });
@@ -67,7 +69,7 @@ public class UpdateHttpService implements IUpdateHttpService {
 
     @Override
     public void asyncPost(@NonNull String url, @NonNull Map<String, Object> params, final @NonNull Callback callBack) {
-        //Log.e("XUpdate", "asyncPost--- " + url);
+        Log.e("XUpdate", "asyncPost--- " + url);
         OkGo.<String>post(url)
                 .params(transform(params))
                 .client(customOkHttpClient) // 使用自定义客户端
@@ -75,13 +77,13 @@ public class UpdateHttpService implements IUpdateHttpService {
                     @Override
                     public void onSuccess(Response<String> response) {
                         callBack.onSuccess(response.body());
-                        Log.e("XUpdate", "onSuccess--- " + response.body());
+                        Log.e("XUpdate", "asyncPost onSuccess--- " + response.body());
                     }
 
                     @Override
                     public void onError(Response<String> response) {
                         super.onError(response);
-                        Log.e("XUpdate", "onError--- " + response);
+                        Log.e("XUpdate", "asyncPost onError--- " + response.getException());
                         callBack.onError(response.getException());
                     }
                 });
@@ -90,9 +92,9 @@ public class UpdateHttpService implements IUpdateHttpService {
 
     @Override
     public void download(@NonNull String url, @NonNull String path, @NonNull String fileName, final @NonNull DownloadCallback callback) {
-//        Log.e("XUpdate", "download--- " + url);
-//        Log.e("XUpdate", "download--- " + path);
-//        Log.e("XUpdate", "download--- " + fileName);
+        Log.e("XUpdate", "download--- " + url);
+        Log.e("XUpdate", "download--- " + path);
+        Log.e("XUpdate", "download--- " + fileName);
         OkGo.<File>get(url)
                 .tag(url)                    // 请求的 tag, 主要用于取消对应的请求
                 .client(customOkHttpClient) // 使用自定义客户端
@@ -107,7 +109,7 @@ public class UpdateHttpService implements IUpdateHttpService {
                     @Override
                     public void onStart(com.lzy.okgo.request.base.Request<File, ? extends com.lzy.okgo.request.base.Request> request) {
                         super.onStart(request);
-                        //Log.e("XUpdate", "download--- 下载开始" + fileName);
+                        Log.e("XUpdate", "download--- 下载开始" + fileName);
                         callback.onStart();
 
                     }
@@ -115,13 +117,13 @@ public class UpdateHttpService implements IUpdateHttpService {
                     @Override
                     public void onFinish() {
                         super.onFinish();
-                        //Log.e("XUpdate", "download--- 下载完成" + fileName);
+                        Log.e("XUpdate", "download--- 下载完成" + fileName);
                     }
 
 
                     @Override
                     public void onSuccess(Response<File> response) {
-                        //Log.e("XUpdate", "download--- 下载成功" + fileName);
+                        Log.e("XUpdate", "download--- 下载成功" + fileName);
                         callback.onSuccess(response.body());
 
                     }
@@ -129,7 +131,7 @@ public class UpdateHttpService implements IUpdateHttpService {
                     @Override
                     public void onError(Response<File> response) {
                         super.onError(response);
-                        //Log.e("XUpdate", "download--- 下载失败");
+                        Log.e("XUpdate", "download--- 下载失败: " + response.getException());
                         callback.onError(response.getException());
                     }
 
@@ -192,10 +194,17 @@ public class UpdateHttpService implements IUpdateHttpService {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
 
+            // 配置支持所有 TLS 版本的 ConnectionSpec
+            ConnectionSpec cs = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_0, TlsVersion.TLS_1_1, TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
+                    .allEnabledCipherSuites()
+                    .build();
+
             // 创建 OkHttpClient 并配置
             return new OkHttpClient.Builder()
-                    .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAllCerts[0])
+                    .sslSocketFactory(new Tls12SocketFactory(sslContext.getSocketFactory()), (X509TrustManager) trustAllCerts[0])
                     .hostnameVerifier((hostname, session) -> true) // 跳过主机名验证
+                    .connectionSpecs(Arrays.asList(cs, ConnectionSpec.CLEARTEXT))
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .readTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
