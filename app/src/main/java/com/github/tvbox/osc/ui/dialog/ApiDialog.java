@@ -42,13 +42,15 @@ import me.jessyan.autosize.utils.AutoSizeUtils;
 public class ApiDialog extends BaseDialog {
     private ImageView ivQRCode;
     private TextView tvAddress;
-    private EditText inputApi;
+    // 删除点播输入框引用
+    // private EditText inputApi;  // 删除这一行
     private EditText inputApiLive;
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void refresh(RefreshEvent event) {
         if (event.type == RefreshEvent.TYPE_API_URL_CHANGE) {
-            inputApi.setText((String) event.obj);
+            // 删除点播输入框的设置
+            // inputApi.setText((String) event.obj);  // 删除这一行
             inputApiLive.setText((String) event.obj);
         }
     }
@@ -59,11 +61,16 @@ public class ApiDialog extends BaseDialog {
         setCanceledOnTouchOutside(false);
         ivQRCode = findViewById(R.id.ivQRCode);
         tvAddress = findViewById(R.id.tvAddress);
-        inputApi = findViewById(R.id.input);
+        // 删除点播输入框的初始化
+        // inputApi = findViewById(R.id.input);  // 删除这一行
         inputApiLive = findViewById(R.id.inputLive);
-        //内置网络接口在此处添加
-        inputApi.setText(Hawk.get(HawkConfig.API_URL, ""));
+
+        // 删除点播输入框的文本设置
+        // inputApi.setText(Hawk.get(HawkConfig.API_URL, ""));  // 删除这一行
         inputApiLive.setText(Hawk.get(HawkConfig.LIVE_API_URL, Hawk.get(HawkConfig.API_URL)));
+
+        // 删除点播确定按钮的点击事件
+        /* 删除整个点播确定按钮的点击事件
         findViewById(R.id.inputSubmit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -79,6 +86,9 @@ public class ApiDialog extends BaseDialog {
                 dismiss();
             }
         });
+        */
+
+        // 保留直播确定按钮的点击事件
         findViewById(R.id.inputSubmitLive).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -90,6 +100,7 @@ public class ApiDialog extends BaseDialog {
                 dismiss();
             }
         });
+
         findViewById(R.id.apiHistory).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -120,6 +131,7 @@ public class ApiDialog extends BaseDialog {
                 dialog.show();
             }
         });
+
         findViewById(R.id.storagePermission).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -149,6 +161,9 @@ public class ApiDialog extends BaseDialog {
                 }
             }
         });
+
+        // 删除点播输入框的编辑器动作监听
+        /* 删除整个点播输入框的编辑器动作监听
         inputApi.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -169,6 +184,8 @@ public class ApiDialog extends BaseDialog {
                 return false;
             }
         });
+        */
+
         refreshQRCode();
     }
 
@@ -178,6 +195,8 @@ public class ApiDialog extends BaseDialog {
         ivQRCode.setImageBitmap(QRCodeGen.generateBitmap(address+"api.html", AutoSizeUtils.mm2px(getContext(), 300), AutoSizeUtils.mm2px(getContext(), 300)));
     }
 
+    // 由于删除了点播配置功能，这个监听器可能不再需要
+    // 但为了兼容性，暂时保留
     public void setOnListener(OnListener listener) {
         this.listener = listener;
     }
