@@ -42,15 +42,11 @@ import me.jessyan.autosize.utils.AutoSizeUtils;
 public class ApiDialog extends BaseDialog {
     private ImageView ivQRCode;
     private TextView tvAddress;
-    // 删除点播输入框引用
-    // private EditText inputApi;  // 删除这一行
     private EditText inputApiLive;
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void refresh(RefreshEvent event) {
         if (event.type == RefreshEvent.TYPE_API_URL_CHANGE) {
-            // 删除点播输入框的设置
-            // inputApi.setText((String) event.obj);  // 删除这一行
             inputApiLive.setText((String) event.obj);
         }
     }
@@ -61,32 +57,9 @@ public class ApiDialog extends BaseDialog {
         setCanceledOnTouchOutside(false);
         ivQRCode = findViewById(R.id.ivQRCode);
         tvAddress = findViewById(R.id.tvAddress);
-        // 删除点播输入框的初始化
-        // inputApi = findViewById(R.id.input);  // 删除这一行
         inputApiLive = findViewById(R.id.inputLive);
 
-        // 删除点播输入框的文本设置
-        // inputApi.setText(Hawk.get(HawkConfig.API_URL, ""));  // 删除这一行
         inputApiLive.setText(Hawk.get(HawkConfig.LIVE_API_URL, Hawk.get(HawkConfig.API_URL)));
-
-        // 删除点播确定按钮的点击事件
-        /* 删除整个点播确定按钮的点击事件
-        findViewById(R.id.inputSubmit).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String newApi = inputApi.getText().toString().trim();
-                if (!newApi.isEmpty()) {
-                    HistoryHelper.setApiHistory(newApi);
-                    if(!newApi.equals(Hawk.get(HawkConfig.API_URL, newApi))){
-                        inputApiLive.setText(newApi);
-                        Hawk.put(HawkConfig.LIVE_API_URL, newApi);
-                    }
-                }
-                listener.onchange(newApi);
-                dismiss();
-            }
-        });
-        */
 
         // 保留直播确定按钮的点击事件
         findViewById(R.id.inputSubmitLive).setOnClickListener(new View.OnClickListener() {
@@ -161,31 +134,6 @@ public class ApiDialog extends BaseDialog {
                 }
             }
         });
-
-        // 删除点播输入框的编辑器动作监听
-        /* 删除整个点播输入框的编辑器动作监听
-        inputApi.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_SEARCH || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                    String newApi = inputApi.getText().toString().trim();
-                    if (!newApi.isEmpty()) {
-                        HistoryHelper.setApiHistory(newApi);
-
-                        if(!newApi.equals(Hawk.get(HawkConfig.API_URL, newApi))){
-                            inputApiLive.setText(newApi);
-                            Hawk.put(HawkConfig.LIVE_API_URL, newApi);
-                        }
-                    }
-                    listener.onchange(newApi);
-                    dismiss();
-                    return true;
-                }
-                return false;
-            }
-        });
-        */
-
         refreshQRCode();
     }
 
