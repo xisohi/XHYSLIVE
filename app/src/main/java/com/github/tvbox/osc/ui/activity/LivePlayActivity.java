@@ -218,6 +218,7 @@ public class LivePlayActivity extends BaseActivity {
 
     @Override
     protected void init() {
+        try {
         context = this;
         epgStringAddress = Hawk.get(HawkConfig.EPG_URL,"");
         if(epgStringAddress == null || epgStringAddress.length()<5)
@@ -382,8 +383,21 @@ public class LivePlayActivity extends BaseActivity {
         initSettingGroupView();
         initSettingItemView();
         initLiveChannelList();
-        initLiveSettingGroupList();
+// 在初始化设置分组时添加异常捕获
+        try {
+            initLiveSettingGroupList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 设置分组初始化失败时创建默认设置
+            createDefaultSettingGroups();
+            Toast.makeText(this, "设置功能初始化失败，但可以继续使用", Toast.LENGTH_SHORT).show();
+        }
         Hawk.put(HawkConfig.PLAYER_IS_LIVE,true);
+    }catch (Exception e) {
+            e.printStackTrace();
+            // 主初始化失败时，尝试最基本的初始化
+            emergencyInit();
+        }
     }
     //获取EPG并存储 // 百川epg  DIYP epg   51zmt epg ------- 自建EPG格式输出格式请参考 51zmt
     private List<Epginfo> epgdata = new ArrayList<>();
@@ -1045,19 +1059,37 @@ public class LivePlayActivity extends BaseActivity {
         }
         if (tvRightSettingLayout.getVisibility() == View.INVISIBLE) {
             if (!isCurrentLiveChannelValid()) return;
+
+            // !!! 添加空列表检查 !!!
+            if (liveSettingGroupList == null || liveSettingGroupList.isEmpty()) {
+                Toast.makeText(this, "设置功能暂不可用", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             //重新载入默认状态
             loadCurrentSourceList();
             liveSettingGroupAdapter.setNewData(liveSettingGroupList);
-            selectSettingGroup(0, false);
+
+            // 确保第一个分组有数据
+            if (liveSettingGroupList.size() > 0) {
+                LiveSettingGroup firstGroup = liveSettingGroupList.get(0);
+                if (firstGroup.getLiveSettingItems() == null || firstGroup.getLiveSettingItems().isEmpty()) {
+                    Toast.makeText(this, "设置项为空", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                selectSettingGroup(0, false);
+            }
+
             mSettingGroupView.scrollToPosition(0);
-            mSettingItemView.scrollToPosition(currentLiveChannelItem.getSourceIndex());
+            if (currentLiveChannelItem != null) {
+                mSettingItemView.scrollToPosition(currentLiveChannelItem.getSourceIndex());
+            }
             mHandler.postDelayed(mFocusAndShowSettingGroup, 50);
         } else {
             mHandler.removeCallbacks(mHideSettingLayoutRun);
             mHandler.post(mHideSettingLayoutRun);
         }
     }
-
     private Runnable mFocusAndShowSettingGroup = new Runnable() {
         @Override
         public void run() {
@@ -1690,33 +1722,60 @@ public class LivePlayActivity extends BaseActivity {
             }
         });
     }
-
     private void selectSettingGroup(int position, boolean focus) {
         if (!isCurrentLiveChannelValid()) return;
         if (focus) {
             liveSettingGroupAdapter.setFocusedGroupIndex(position);
-            liveSettingItemAdapter.setFocusedItemIndex(-1);
+            if (liveSettingItemAdapter != null) {
+                liveSettingItemAdapter.setFocusedItemIndex(-1);
+            }
+        }
+
+        // !!! 添加空列表检查 !!!
+        if (position < 0 || position >= liveSettingGroupList.size()) {
+            return;
+        }
+
+        LiveSettingGroup selectedGroup = liveSettingGroupList.get(position);
+        if (selectedGroup == null || selectedGroup.getLiveSettingItems() == null || selectedGroup.getLiveSettingItems().isEmpty()) {
+            // 如果设置项为空，不进行后续操作
+            Toast.makeText(this, "该设置组暂无可用选项", Toast.LENGTH_SHORT).show();
+            return;
         }
         if (position == liveSettingGroupAdapter.getSelectedGroupIndex() || position < -1)
             return;
 
         liveSettingGroupAdapter.setSelectedGroupIndex(position);
-        liveSettingItemAdapter.setNewData(liveSettingGroupList.get(position).getLiveSettingItems());
+
+        // 安全地设置新数据
+        if (liveSettingItemAdapter != null) {
+            liveSettingItemAdapter.setNewData(selectedGroup.getLiveSettingItems());
+        }
 
         switch (position) {
             case 0:
-                liveSettingItemAdapter.selectItem(currentLiveChannelItem.getSourceIndex(), true, false);
+                if (liveSettingItemAdapter != null && currentLiveChannelItem != null) {
+                    liveSettingItemAdapter.selectItem(currentLiveChannelItem.getSourceIndex(), true, false);
+                }
                 break;
             case 1:
-                liveSettingItemAdapter.selectItem(livePlayerManager.getLivePlayerScale(), true, true);
+                if (liveSettingItemAdapter != null) {
+                    liveSettingItemAdapter.selectItem(livePlayerManager.getLivePlayerScale(), true, true);
+                }
                 break;
             case 2:
-                liveSettingItemAdapter.selectItem(livePlayerManager.getLivePlayerType(), true, true);
+                if (liveSettingItemAdapter != null) {
+                    liveSettingItemAdapter.selectItem(livePlayerManager.getLivePlayerType(), true, true);
+                }
                 break;
         }
-        int scrollToPosition = liveSettingItemAdapter.getSelectedItemIndex();
-        if (scrollToPosition < 0) scrollToPosition = 0;
-        mSettingItemView.scrollToPosition(scrollToPosition);
+
+        if (liveSettingItemAdapter != null) {
+            int scrollToPosition = liveSettingItemAdapter.getSelectedItemIndex();
+            if (scrollToPosition < 0) scrollToPosition = 0;
+            mSettingItemView.scrollToPosition(scrollToPosition);
+        }
+
         mHandler.removeCallbacks(mHideSettingLayoutRun);
         mHandler.postDelayed(mHideSettingLayoutRun, postTimeout);
     }
@@ -1745,14 +1804,26 @@ public class LivePlayActivity extends BaseActivity {
             @Override
             public void onItemSelected(TvRecyclerView parent, View itemView, int position) {
                 if (position < 0) return;
-                liveSettingGroupAdapter.setFocusedGroupIndex(-1);
-                liveSettingItemAdapter.setFocusedItemIndex(position);
+
+                // !!! 添加安全检查 !!!
+                if (liveSettingGroupAdapter != null) {
+                    liveSettingGroupAdapter.setFocusedGroupIndex(-1);
+                }
+                if (liveSettingItemAdapter != null) {
+                    liveSettingItemAdapter.setFocusedItemIndex(position);
+                }
+
                 mHandler.removeCallbacks(mHideSettingLayoutRun);
                 mHandler.postDelayed(mHideSettingLayoutRun, postTimeout);
             }
 
             @Override
             public void onItemClick(TvRecyclerView parent, View itemView, int position) {
+                // !!! 添加安全检查 !!!
+                if (position < 0 || liveSettingItemAdapter == null ||
+                        position >= liveSettingItemAdapter.getItemCount()) {
+                    return;
+                }
                 clickSettingItem(position);
             }
         });
@@ -1762,6 +1833,10 @@ public class LivePlayActivity extends BaseActivity {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
                 FastClickCheckUtil.check(view);
+                // !!! 添加安全检查 !!!
+                if (position < 0 || position >= adapter.getItemCount()) {
+                    return;
+                }
                 clickSettingItem(position);
             }
         });
@@ -2041,39 +2116,241 @@ public class LivePlayActivity extends BaseActivity {
     }
 
     private void initLiveSettingGroupList() {
-        liveSettingGroupList = ApiConfig.get().getLiveSettingGroupList();
-        liveSettingGroupList.get(3).getLiveSettingItems().get(Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 1)).setItemSelected(true);
-        liveSettingGroupList.get(4).getLiveSettingItems().get(0).setItemSelected(Hawk.get(HawkConfig.LIVE_SHOW_TIME, false));
-        liveSettingGroupList.get(4).getLiveSettingItems().get(1).setItemSelected(Hawk.get(HawkConfig.LIVE_SHOW_NET_SPEED, false));
-        liveSettingGroupList.get(4).getLiveSettingItems().get(2).setItemSelected(Hawk.get(HawkConfig.LIVE_CHANNEL_REVERSE, false));
-        liveSettingGroupList.get(4).getLiveSettingItems().get(3).setItemSelected(Hawk.get(HawkConfig.LIVE_CROSS_GROUP, false));
-        liveSettingGroupList.get(5).getLiveSettingItems().get(Hawk.get(HawkConfig.LIVE_GROUP_INDEX, 0)).setItemSelected(true);
+        try {
+            // 添加空值检查和异常处理
+            if (liveSettingGroupList == null) {
+                liveSettingGroupList = new ArrayList<>();
+            }
 
-        // !!! 添加系统设置分组 !!!
-        LiveSettingGroup systemSettingGroup = new LiveSettingGroup();
-        systemSettingGroup.setGroupIndex(6); // 新的分组索引
-        systemSettingGroup.setGroupName("系统设置");
+            // 从配置获取设置分组列表
+            List<LiveSettingGroup> configList = ApiConfig.get().getLiveSettingGroupList();
+            if (configList != null && !configList.isEmpty()) {
+                liveSettingGroupList.clear();
+                liveSettingGroupList.addAll(configList);
 
-        ArrayList<LiveSettingItem> systemSettingItems = new ArrayList<>();
-        LiveSettingItem systemSettingItem = new LiveSettingItem();
-        systemSettingItem.setItemIndex(0);
-        systemSettingItem.setItemName("系统设置");
-        systemSettingItems.add(systemSettingItem);
+                // 安全地设置选中状态 - 添加边界检查
+                if (liveSettingGroupList.size() > 3) {
+                    int timeoutIndex = Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 1);
+                    if (timeoutIndex >= 0 && timeoutIndex < liveSettingGroupList.get(3).getLiveSettingItems().size()) {
+                        liveSettingGroupList.get(3).getLiveSettingItems().get(timeoutIndex).setItemSelected(true);
+                    }
+                }
 
-        systemSettingGroup.setLiveSettingItems(systemSettingItems);
-        liveSettingGroupList.add(systemSettingGroup);
+                if (liveSettingGroupList.size() > 4) {
+                    // 设置偏好设置选中状态
+                    if (liveSettingGroupList.get(4).getLiveSettingItems().size() > 0) {
+                        liveSettingGroupList.get(4).getLiveSettingItems().get(0).setItemSelected(Hawk.get(HawkConfig.LIVE_SHOW_TIME, false));
+                    }
+                    if (liveSettingGroupList.get(4).getLiveSettingItems().size() > 1) {
+                        liveSettingGroupList.get(4).getLiveSettingItems().get(1).setItemSelected(Hawk.get(HawkConfig.LIVE_SHOW_NET_SPEED, false));
+                    }
+                    if (liveSettingGroupList.get(4).getLiveSettingItems().size() > 2) {
+                        liveSettingGroupList.get(4).getLiveSettingItems().get(2).setItemSelected(Hawk.get(HawkConfig.LIVE_CHANNEL_REVERSE, false));
+                    }
+                    if (liveSettingGroupList.get(4).getLiveSettingItems().size() > 3) {
+                        liveSettingGroupList.get(4).getLiveSettingItems().get(3).setItemSelected(Hawk.get(HawkConfig.LIVE_CROSS_GROUP, false));
+                    }
+                }
+
+                if (liveSettingGroupList.size() > 5) {
+                    int groupIndex = Hawk.get(HawkConfig.LIVE_GROUP_INDEX, 0);
+                    if (groupIndex >= 0 && groupIndex < liveSettingGroupList.get(5).getLiveSettingItems().size()) {
+                        liveSettingGroupList.get(5).getLiveSettingItems().get(groupIndex).setItemSelected(true);
+                    }
+                }
+            } else {
+                // 如果配置为空，创建默认设置分组
+                createDefaultSettingGroups();
+            }
+
+            // 添加系统设置分组
+            addSystemSettingGroup();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 发生异常时创建默认设置
+            createDefaultSettingGroups();
+            Toast.makeText(this, "设置初始化失败，已使用默认设置", Toast.LENGTH_SHORT).show();
+        }
+    }
+    /**
+     * 创建默认的设置分组，防止空列表导致的崩溃
+     */
+    private void createDefaultSettingGroups() {
+        liveSettingGroupList = new ArrayList<>();
+
+        // 创建线路切换分组
+        LiveSettingGroup sourceGroup = new LiveSettingGroup();
+        sourceGroup.setGroupIndex(0);
+        sourceGroup.setGroupName("线路切换");
+        sourceGroup.setLiveSettingItems(new ArrayList<>());
+        liveSettingGroupList.add(sourceGroup);
+
+        // 创建画面比例分组
+        LiveSettingGroup scaleGroup = new LiveSettingGroup();
+        scaleGroup.setGroupIndex(1);
+        scaleGroup.setGroupName("画面比例");
+        scaleGroup.setLiveSettingItems(new ArrayList<>());
+        liveSettingGroupList.add(scaleGroup);
+
+        // 创建播放解码分组
+        LiveSettingGroup playerGroup = new LiveSettingGroup();
+        playerGroup.setGroupIndex(2);
+        playerGroup.setGroupName("播放解码");
+        playerGroup.setLiveSettingItems(new ArrayList<>());
+        liveSettingGroupList.add(playerGroup);
+
+        // 创建超时换源分组
+        LiveSettingGroup timeoutGroup = new LiveSettingGroup();
+        timeoutGroup.setGroupIndex(3);
+        timeoutGroup.setGroupName("超时换源");
+        ArrayList<LiveSettingItem> timeoutItems = new ArrayList<>();
+        LiveSettingItem timeoutItem = new LiveSettingItem();
+        timeoutItem.setItemIndex(0);
+        timeoutItem.setItemName("5秒");
+        timeoutItem.setItemSelected(true);
+        timeoutItems.add(timeoutItem);
+        timeoutGroup.setLiveSettingItems(timeoutItems);
+        liveSettingGroupList.add(timeoutGroup);
+
+        // 创建偏好设置分组
+        LiveSettingGroup preferenceGroup = new LiveSettingGroup();
+        preferenceGroup.setGroupIndex(4);
+        preferenceGroup.setGroupName("偏好设置");
+        ArrayList<LiveSettingItem> preferenceItems = new ArrayList<>();
+
+        LiveSettingItem timeItem = new LiveSettingItem();
+        timeItem.setItemIndex(0);
+        timeItem.setItemName("显示时间");
+        timeItem.setItemSelected(false);
+        preferenceItems.add(timeItem);
+
+        LiveSettingItem speedItem = new LiveSettingItem();
+        speedItem.setItemIndex(1);
+        speedItem.setItemName("显示网速");
+        speedItem.setItemSelected(false);
+        preferenceItems.add(speedItem);
+
+        LiveSettingItem reverseItem = new LiveSettingItem();
+        reverseItem.setItemIndex(2);
+        reverseItem.setItemName("频道反转");
+        reverseItem.setItemSelected(false);
+        preferenceItems.add(reverseItem);
+
+        LiveSettingItem crossGroupItem = new LiveSettingItem();
+        crossGroupItem.setItemIndex(3);
+        crossGroupItem.setItemName("跨组切换");
+        crossGroupItem.setItemSelected(false);
+        preferenceItems.add(crossGroupItem);
+
+        preferenceGroup.setLiveSettingItems(preferenceItems);
+        liveSettingGroupList.add(preferenceGroup);
+
+        // 创建多源切换分组
+        LiveSettingGroup multiSourceGroup = new LiveSettingGroup();
+        multiSourceGroup.setGroupIndex(5);
+        multiSourceGroup.setGroupName("多源切换");
+        multiSourceGroup.setLiveSettingItems(new ArrayList<>());
+        liveSettingGroupList.add(multiSourceGroup);
+    }
+    /**
+     * 添加系统设置分组
+     */
+    private void addSystemSettingGroup() {
+        try {
+            LiveSettingGroup systemSettingGroup = new LiveSettingGroup();
+            systemSettingGroup.setGroupIndex(6);
+            systemSettingGroup.setGroupName("系统设置");
+
+            ArrayList<LiveSettingItem> systemSettingItems = new ArrayList<>();
+            LiveSettingItem systemSettingItem = new LiveSettingItem();
+            systemSettingItem.setItemIndex(0);
+            systemSettingItem.setItemName("系统设置");
+            systemSettingItems.add(systemSettingItem);
+
+            systemSettingGroup.setLiveSettingItems(systemSettingItems);
+            liveSettingGroupList.add(systemSettingGroup);
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 即使添加系统设置失败也不影响主要功能
+        }
+    }
+    /**
+     * 紧急初始化，当主初始化失败时调用
+     */
+    private void emergencyInit() {
+        try {
+            // 只进行最必要的初始化
+            mVideoView = findViewById(R.id.mVideoView);
+            initVideoView();
+
+            // 创建默认的频道列表
+            setDefaultLiveChannelList();
+
+            // 创建默认的设置分组
+            createDefaultSettingGroups();
+
+            Toast.makeText(this, "直播初始化完成，部分功能可能受限", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "应用初始化失败，请重启应用", Toast.LENGTH_LONG).show();
+            // 延迟退出，让用户看到提示
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    finish();
+                }
+            }, 3000);
+        }
     }
 
     private void loadCurrentSourceList() {
-        ArrayList<String> currentSourceNames = currentLiveChannelItem.getChannelSourceNames();
-        ArrayList<LiveSettingItem> liveSettingItemList = new ArrayList<>();
-        for (int j = 0; j < currentSourceNames.size(); j++) {
-            LiveSettingItem liveSettingItem = new LiveSettingItem();
-            liveSettingItem.setItemIndex(j);
-            liveSettingItem.setItemName(currentSourceNames.get(j));
-            liveSettingItemList.add(liveSettingItem);
+        try {
+            if (currentLiveChannelItem == null) {
+                // 如果当前频道为空，创建默认的源列表
+                createDefaultSourceList();
+                return;
+            }
+
+            ArrayList<String> currentSourceNames = currentLiveChannelItem.getChannelSourceNames();
+            ArrayList<LiveSettingItem> liveSettingItemList = new ArrayList<>();
+
+            if (currentSourceNames != null && !currentSourceNames.isEmpty()) {
+                for (int j = 0; j < currentSourceNames.size(); j++) {
+                    LiveSettingItem liveSettingItem = new LiveSettingItem();
+                    liveSettingItem.setItemIndex(j);
+                    liveSettingItem.setItemName(currentSourceNames.get(j));
+                    liveSettingItemList.add(liveSettingItem);
+                }
+            } else {
+                // 如果源列表为空，添加一个默认项
+                LiveSettingItem defaultItem = new LiveSettingItem();
+                defaultItem.setItemIndex(0);
+                defaultItem.setItemName("默认线路");
+                liveSettingItemList.add(defaultItem);
+            }
+
+            // 安全地设置线路切换分组
+            if (liveSettingGroupList.size() > 0) {
+                liveSettingGroupList.get(0).setLiveSettingItems(liveSettingItemList);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 发生异常时创建默认数据
+            createDefaultSourceList();
         }
-        liveSettingGroupList.get(0).setLiveSettingItems(liveSettingItemList);
+    }
+
+    private void createDefaultSourceList() {
+        ArrayList<LiveSettingItem> liveSettingItemList = new ArrayList<>();
+        LiveSettingItem defaultItem = new LiveSettingItem();
+        defaultItem.setItemIndex(0);
+        defaultItem.setItemName("默认线路");
+        liveSettingItemList.add(defaultItem);
+
+        if (liveSettingGroupList.size() > 0) {
+            liveSettingGroupList.get(0).setLiveSettingItems(liveSettingItemList);
+        }
     }
 
     void showTime() {
@@ -2241,6 +2518,16 @@ public class LivePlayActivity extends BaseActivity {
             return false;
         }
         return true;
+    }
+
+    /**
+     * 检查设置项是否可用
+     */
+    private boolean isSettingAvailable() {
+        return liveSettingGroupList != null &&
+                !liveSettingGroupList.isEmpty() &&
+                liveSettingGroupList.get(0).getLiveSettingItems() != null &&
+                !liveSettingGroupList.get(0).getLiveSettingItems().isEmpty();
     }
 
     //计算两个时间相差的秒数
