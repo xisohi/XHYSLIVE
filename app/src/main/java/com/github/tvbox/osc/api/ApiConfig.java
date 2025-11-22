@@ -174,7 +174,7 @@ public class ApiConfig {
     public void loadConfig(boolean useCache, LoadConfigCallback callback, Activity activity) {
         String apiUrl = Hawk.get(HawkConfig.API_URL, "");
         //独立加载直播配置
-        String liveApiUrl = Hawk.get(HawkConfig.LIVE_API_URL, "https://xhys.xisohi.dpdns.org/live.txt");
+        String liveApiUrl = Hawk.get(HawkConfig.LIVE_API_URL, "https://xhys.xisohi.dpdns.org/json/live.json");
         String liveApiConfigUrl=configUrl(liveApiUrl);
         if(!liveApiUrl.isEmpty() && !liveApiUrl.equals(apiUrl)){
             if(liveApiUrl.contains(".txt") || liveApiUrl.contains(".m3u") || liveApiUrl.contains("=txt") || liveApiUrl.contains("=m3u")){
@@ -741,7 +741,7 @@ public class ApiConfig {
         ArrayList<String> scaleItems = new ArrayList<>(Arrays.asList("默认", "16:9", "4:3", "填充", "原始", "裁剪"));
         ArrayList<String> playerDecoderItems = new ArrayList<>(Arrays.asList("系统", "ijk硬解", "ijk软解", "exo"));
         ArrayList<String> timeoutItems = new ArrayList<>(Arrays.asList("5s", "10s", "15s", "20s", "25s", "30s"));
-        ArrayList<String> personalSettingItems = new ArrayList<>(Arrays.asList("显示时间", "显示网速", "换台反转", "跨选分类"));
+        ArrayList<String> personalSettingItems = new ArrayList<>(Arrays.asList("显示时间", "显示网速", "换台反转", "跨选分类", "系统设置"));
         ArrayList<String> yumItems = new ArrayList<>();
 
         itemsArrayList.add(sourceItems);

@@ -1887,9 +1887,15 @@ public class LivePlayActivity extends BaseActivity {
                         select = !Hawk.get(HawkConfig.LIVE_CROSS_GROUP, false);
                         Hawk.put(HawkConfig.LIVE_CROSS_GROUP, select);
                         break;
+                    case 4:
+                        jumpToSystemSettings();
+                        break;
                 }
-                liveSettingItemAdapter.selectItem(position, select, false);
+                if (position < 4) {
+                    liveSettingItemAdapter.selectItem(position, select, false);
+                }
                 break;
+
             case 5://多源切换
                 //TODO
                 if (mVideoView != null) {
@@ -1904,10 +1910,6 @@ public class LivePlayActivity extends BaseActivity {
                 ApiConfig.get().loadLiveApi(livesOBJ);
                 recreate();
                 return;
-            case 6: // !!! 系统设置 !!!
-                // 跳转到系统设置页面
-                jumpToSystemSettings();
-                break;
         }
         mHandler.removeCallbacks(mHideSettingLayoutRun);
         mHandler.postDelayed(mHideSettingLayoutRun, postTimeout);
@@ -2128,6 +2130,9 @@ public class LivePlayActivity extends BaseActivity {
                 liveSettingGroupList.clear();
                 liveSettingGroupList.addAll(configList);
 
+                // 确保偏好设置包含系统设置
+                ensureSystemSettingInPreference();
+
                 // 安全地设置选中状态 - 添加边界检查
                 if (liveSettingGroupList.size() > 3) {
                     int timeoutIndex = Hawk.get(HawkConfig.LIVE_CONNECT_TIMEOUT, 1);
@@ -2162,10 +2167,6 @@ public class LivePlayActivity extends BaseActivity {
                 // 如果配置为空，创建默认设置分组
                 createDefaultSettingGroups();
             }
-
-            // 添加系统设置分组
-            addSystemSettingGroup();
-
         } catch (Exception e) {
             e.printStackTrace();
             // 发生异常时创建默认设置
@@ -2173,6 +2174,45 @@ public class LivePlayActivity extends BaseActivity {
             Toast.makeText(this, "设置初始化失败，已使用默认设置", Toast.LENGTH_SHORT).show();
         }
     }
+
+    /**
+     * 确保偏好设置中包含系统设置
+     */
+    private void ensureSystemSettingInPreference() {
+        try {
+            // 确保偏好设置分组存在
+            if (liveSettingGroupList.size() > 4) {
+                LiveSettingGroup preferenceGroup = liveSettingGroupList.get(4);
+                if (preferenceGroup != null && "偏好设置".equals(preferenceGroup.getGroupName())) {
+                    ArrayList<LiveSettingItem> preferenceItems = preferenceGroup.getLiveSettingItems();
+                    if (preferenceItems == null) {
+                        preferenceItems = new ArrayList<>();
+                        preferenceGroup.setLiveSettingItems(preferenceItems);
+                    }
+
+                    // 检查是否已经包含系统设置
+                    boolean hasSystemSetting = false;
+                    for (LiveSettingItem item : preferenceItems) {
+                        if ("系统设置".equals(item.getItemName())) {
+                            hasSystemSetting = true;
+                            break;
+                        }
+                    }
+
+                    // 如果没有系统设置，则添加
+                    if (!hasSystemSetting) {
+                        LiveSettingItem systemSettingItem = new LiveSettingItem();
+                        systemSettingItem.setItemIndex(preferenceItems.size());
+                        systemSettingItem.setItemName("系统设置");
+                        preferenceItems.add(systemSettingItem);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * 创建默认的设置分组，防止空列表导致的崩溃
      */
@@ -2213,7 +2253,7 @@ public class LivePlayActivity extends BaseActivity {
         timeoutGroup.setLiveSettingItems(timeoutItems);
         liveSettingGroupList.add(timeoutGroup);
 
-        // 创建偏好设置分组
+        // 创建偏好设置分组 - +++ 修改：确保包含系统设置 +++
         LiveSettingGroup preferenceGroup = new LiveSettingGroup();
         preferenceGroup.setGroupIndex(4);
         preferenceGroup.setGroupName("偏好设置");
@@ -2243,6 +2283,12 @@ public class LivePlayActivity extends BaseActivity {
         crossGroupItem.setItemSelected(false);
         preferenceItems.add(crossGroupItem);
 
+        // +++ 新增：添加系统设置到偏好设置中 +++
+        LiveSettingItem systemSettingItem = new LiveSettingItem();
+        systemSettingItem.setItemIndex(4);
+        systemSettingItem.setItemName("系统设置");
+        preferenceItems.add(systemSettingItem);
+
         preferenceGroup.setLiveSettingItems(preferenceItems);
         liveSettingGroupList.add(preferenceGroup);
 
@@ -2253,28 +2299,7 @@ public class LivePlayActivity extends BaseActivity {
         multiSourceGroup.setLiveSettingItems(new ArrayList<>());
         liveSettingGroupList.add(multiSourceGroup);
     }
-    /**
-     * 添加系统设置分组
-     */
-    private void addSystemSettingGroup() {
-        try {
-            LiveSettingGroup systemSettingGroup = new LiveSettingGroup();
-            systemSettingGroup.setGroupIndex(6);
-            systemSettingGroup.setGroupName("系统设置");
 
-            ArrayList<LiveSettingItem> systemSettingItems = new ArrayList<>();
-            LiveSettingItem systemSettingItem = new LiveSettingItem();
-            systemSettingItem.setItemIndex(0);
-            systemSettingItem.setItemName("系统设置");
-            systemSettingItems.add(systemSettingItem);
-
-            systemSettingGroup.setLiveSettingItems(systemSettingItems);
-            liveSettingGroupList.add(systemSettingGroup);
-        } catch (Exception e) {
-            e.printStackTrace();
-            // 即使添加系统设置失败也不影响主要功能
-        }
-    }
     /**
      * 紧急初始化，当主初始化失败时调用
      */
