@@ -13,6 +13,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.base.BaseActivity;
 import com.github.tvbox.osc.base.BaseLazyFragment;
 import com.github.tvbox.osc.ui.adapter.SettingMenuAdapter;
@@ -20,10 +21,13 @@ import com.github.tvbox.osc.ui.adapter.SettingPageAdapter;
 import com.github.tvbox.osc.ui.fragment.ModelSettingFragment;
 import com.github.tvbox.osc.util.AppManager;
 import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.util.LOG;
+import com.github.tvbox.osc.util.MD5;
 import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -177,32 +181,43 @@ public class SettingActivity extends BaseActivity {
         return super.dispatchKeyEvent(event);
     }
 
+    // 在 onBackPressed() 方法中替换现有代码
     @Override
     public void onBackPressed() {
-        // !!! 修改：直接返回到直播页面，而不是主页 !!!
+        // 检测直播源是否发生变化
+        boolean liveApiChanged = !currentLiveApi.equals(Hawk.get(HawkConfig.LIVE_API_URL, ""));
+
+        // 如果直播源地址发生变化，清除缓存
+        if (liveApiChanged) {
+            String newLiveApiUrl = Hawk.get(HawkConfig.LIVE_API_URL, "");
+            // 清除直播源缓存文件
+            File liveCache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(newLiveApiUrl));
+            if (liveCache.exists()) {
+                liveCache.delete();
+            }
+
+            // 清除旧的缓存文件（如果存在）
+            if (!currentLiveApi.isEmpty()) {
+                File oldLiveCache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(currentLiveApi));
+                if (oldLiveCache.exists()) {
+                    oldLiveCache.delete();
+                }
+            }
+
+            LOG.i("echo-直播源地址已变更，清除缓存并重新加载");
+        }
+
+        // 返回直播页面
         Intent intent = new Intent(this, LivePlayActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        // 如果直播源变化，添加重新加载标志
+        if (liveApiChanged) {
+            intent.putExtra("reload_live_source", true);
+        }
+
         startActivity(intent);
         finish();
-
-        // 注释掉原来的跳转逻辑
-        /*
-        if (currentApi.equals(Hawk.get(HawkConfig.API_URL, ""))) {
-            if(dnsOpt != Hawk.get(HawkConfig.DOH_URL, 0)){
-                AppManager.getInstance().finishAllActivity();
-                jumpActivity(HomeActivity.class);
-            }
-            else if ((homeSourceKey != null && !homeSourceKey.equals(Hawk.get(HawkConfig.HOME_API, "")))  || homeRec != Hawk.get(HawkConfig.HOME_REC, 0)) {
-                jumpActivity(HomeActivity.class, createBundle());
-            }else if(!currentLiveApi.equals(Hawk.get(HawkConfig.LIVE_API_URL, ""))){
-                jumpActivity(HomeActivity.class);
-            }
-        } else {
-            AppManager.getInstance().finishAllActivity();
-            jumpActivity(HomeActivity.class);
-        }
-        super.onBackPressed();
-        */
     }
 
     // 如果需要保留原有的部分逻辑，可以这样修改：

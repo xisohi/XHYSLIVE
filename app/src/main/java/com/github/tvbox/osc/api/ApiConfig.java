@@ -173,71 +173,82 @@ public class ApiConfig {
     }
     public void loadConfig(boolean useCache, LoadConfigCallback callback, Activity activity) {
         String apiUrl = Hawk.get(HawkConfig.API_URL, "");
-        //独立加载直播配置
+        // 独立加载直播配置
         String liveApiUrl = Hawk.get(HawkConfig.LIVE_API_URL, "https://xhys.xisohi.dpdns.org/live.txt");
-        String liveApiConfigUrl=configUrl(liveApiUrl);
-        if(!liveApiUrl.isEmpty() && !liveApiUrl.equals(apiUrl)){
-            if(liveApiUrl.contains(".txt") || liveApiUrl.contains(".m3u") || liveApiUrl.contains("=txt") || liveApiUrl.contains("=m3u")){
-                initLiveSettings();
-                defaultLiveObjString = defaultLiveObjString.replace("txt_m3u_url",liveApiConfigUrl);
-                parseLiveJson(liveApiUrl,defaultLiveObjString);
-            }else {
-                File live_cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(liveApiUrl));
-                LOG.i("echo-加载独立直播");
-                if (useCache && live_cache.exists()) {
-                    try {
-                        parseLiveJson(liveApiUrl, live_cache);
-                    } catch (Throwable th) {
-                        th.printStackTrace();
-                    }
-                }else {
-                    OkGo.<String>get(liveApiConfigUrl)
-                            .headers("User-Agent", userAgent)
-                            .headers("Accept", requestAccept)
-                            .execute(new AbsCallback<String>() {
-                                @Override
-                                public void onSuccess(Response<String> response) {
-                                    try {
-                                        String json = response.body();
-                                        parseLiveJson(liveApiUrl, json);
-                                        FileUtils.saveCache(live_cache,json);
-                                    } catch (Throwable th) {
-                                        th.printStackTrace();
-                                        callback.notice("解析直播配置失败");
-                                    }
-                                }
+        String liveApiConfigUrl = configUrl(liveApiUrl);
 
-                                @Override
-                                public void onError(Response<String> response) {
-                                    super.onError(response);
+// 每次都尝试下载最新直播源，但保留缓存作为备用
+        if (!liveApiUrl.isEmpty() && !liveApiUrl.equals(apiUrl)) {
+            File live_cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(liveApiUrl));
+
+            if (liveApiUrl.contains(".txt") || liveApiUrl.contains(".m3u") || liveApiUrl.contains("=txt") || liveApiUrl.contains("=m3u")) {
+                // 处理 txt/m3u 格式
+                initLiveSettings();
+                defaultLiveObjString = defaultLiveObjString.replace("txt_m3u_url", liveApiConfigUrl);
+                parseLiveJson(liveApiUrl, defaultLiveObjString);
+            } else {
+                // 处理 JSON 格式
+                LOG.i("echo-尝试下载最新直播源:" + liveApiUrl);
+
+                // 无论是否有缓存，都先尝试从网络加载
+                OkGo.<String>get(liveApiConfigUrl)
+                        .headers("User-Agent", userAgent)
+                        .headers("Accept", requestAccept)
+                        .execute(new AbsCallback<String>() {
+                            @Override
+                            public void onSuccess(Response<String> response) {
+                                try {
+                                    String json = response.body();
+                                    parseLiveJson(liveApiUrl, json);
+                                    FileUtils.saveCache(live_cache, json);
+                                    LOG.i("echo-直播源下载成功");
+                                    if (callback != null) callback.success();
+                                } catch (Throwable th) {
+                                    th.printStackTrace();
+                                    // 解析失败但缓存存在时，使用缓存
                                     if (live_cache.exists()) {
                                         try {
                                             parseLiveJson(liveApiUrl, live_cache);
-                                            callback.success();
+                                            LOG.i("echo-解析失败，使用缓存直播源");
+                                            if (callback != null) callback.success();
                                             return;
-                                        } catch (Throwable th) {
-                                            th.printStackTrace();
+                                        } catch (Throwable cacheTh) {
+                                            cacheTh.printStackTrace();
                                         }
                                     }
-                                    callback.notice("直播配置拉取失败");
+                                    if (callback != null) callback.notice("解析直播配置失败");
                                 }
+                            }
 
-                                public String convertResponse(okhttp3.Response response) throws Throwable {
-                                    String result = "";
-                                    if (response.body() == null) {
-                                        result = "";
-                                    }else {
-                                        result = FindResult(response.body().string(), TempKey);
-                                        if (liveApiUrl.startsWith("clan")) {
-                                            result = clanContentFix(clanToAddress(liveApiUrl), result);
-                                        }
-                                        //假相對路徑
-                                        result = fixContentPath(liveApiUrl,result);
+                            @Override
+                            public void onError(Response<String> response) {
+                                // 网络失败但缓存存在时，使用缓存
+                                if (live_cache.exists()) {
+                                    try {
+                                        parseLiveJson(liveApiUrl, live_cache);
+                                        LOG.i("echo-网络失败，使用缓存直播源");
+                                        if (callback != null) callback.success();
+                                        return;
+                                    } catch (Throwable th) {
+                                        th.printStackTrace();
                                     }
-                                    return result;
                                 }
-                            });
-                }
+                                if (callback != null) callback.notice("直播配置拉取失败，使用缓存");
+                            }
+
+                            public String convertResponse(okhttp3.Response response) throws Throwable {
+                                String result = "";
+                                if (response.body() != null) {
+                                    result = FindResult(response.body().string(), TempKey);
+                                    if (liveApiUrl.startsWith("clan")) {
+                                        result = clanContentFix(clanToAddress(liveApiUrl), result);
+                                    }
+                                    // 假相對路徑
+                                    result = fixContentPath(liveApiUrl, result);
+                                }
+                                return result;
+                            }
+                        });
             }
         }
 

@@ -4,6 +4,7 @@ import android.app.Activity;
 import androidx.multidex.MultiDexApplication;
 
 import com.github.tvbox.osc.R;
+import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.bean.VodInfo;
 import com.github.tvbox.osc.callback.EmptyCallback;
 import com.github.tvbox.osc.callback.LoadingCallback;
@@ -71,6 +72,29 @@ public class App extends MultiDexApplication {
         FileUtils.cleanPlayerCache();
         //初始化更新
         initUpdate();
+        // +++ 应用启动时加载直播源 +++
+        String liveApiUrl = Hawk.get(HawkConfig.LIVE_API_URL, "");
+        if (!liveApiUrl.isEmpty()) {
+            LOG.i("echo-应用启动，开始加载直播源:" + liveApiUrl);
+
+            // 强制尝试下载最新直播源（不使用缓存）
+            ApiConfig.get().loadConfig(false, new ApiConfig.LoadConfigCallback() {
+                @Override
+                public void success() {
+                    LOG.i("echo-应用启动，直播源加载成功");
+                }
+
+                @Override
+                public void error(String msg) {
+                    LOG.e("echo-应用启动，直播源加载失败: " + msg);
+                }
+
+                @Override
+                public void notice(String msg) {
+                    LOG.i("echo-应用启动，直播源加载: " + msg);
+                }
+            }, null);
+        }
     }
 
     private void initParams() {

@@ -790,14 +790,23 @@ public class LivePlayActivity extends BaseActivity {
         if (mVideoView != null) {
             mVideoView.resume();
         }
-    }
 
+        // 检查是否需要重新加载直播源（从设置页面返回）
+        if (getIntent() != null && getIntent().getBooleanExtra("reload_live_source", false)) {
+            LOG.i("echo-检测到直播源变更，重新加载");
+            // 重新加载直播源
+            initLiveChannelList();
+            // 清除标志，防止重复加载
+            getIntent().removeExtra("reload_live_source");
+        }
+    }
 
     @Override
     protected void onPause() {
         super.onPause();
         if (mVideoView != null) {
             mVideoView.pause();
+            LOG.i("echo-页面暂停，停止播放");
         }
     }
 
@@ -1914,8 +1923,15 @@ public class LivePlayActivity extends BaseActivity {
         mHandler.removeCallbacks(mHideSettingLayoutRun);
         mHandler.postDelayed(mHideSettingLayoutRun, postTimeout);
     }
+
     // 跳转到系统设置
     private void jumpToSystemSettings() {
+        // 暂停当前播放
+        if (mVideoView != null && mVideoView.isPlaying()) {
+            mVideoView.pause();
+            LOG.i("echo-进入设置页面，暂停直播");
+        }
+
         // 隐藏设置面板
         mHandler.removeCallbacks(mHideSettingLayoutRun);
         mHandler.post(mHideSettingLayoutRun);
@@ -1924,6 +1940,7 @@ public class LivePlayActivity extends BaseActivity {
         Intent intent = new Intent(this, SettingActivity.class);
         startActivity(intent);
     }
+
     private void initLiveChannelList() {
         List<LiveChannelGroup> list = ApiConfig.get().getChannelGroupList();
         if (list.isEmpty()) {
