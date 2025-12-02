@@ -4,8 +4,8 @@
 4
 5    <uses-sdk
 6        android:minSdkVersion="16"
-6-->E:\GitHub\XHYSTV\quickjs\src\main\AndroidManifest.xml
+6-->E:\GitHub\XHYSLIVE\quickjs\src\main\AndroidManifest.xml
 7        android:targetSdkVersion="28" />
-7-->E:\GitHub\XHYSTV\quickjs\src\main\AndroidManifest.xml
+7-->E:\GitHub\XHYSLIVE\quickjs\src\main\AndroidManifest.xml
 8
 9</manifest>
