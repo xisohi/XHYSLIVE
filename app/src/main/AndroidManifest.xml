@@ -46,17 +46,9 @@
         <activity
             android:name=".ui.activity.LivePlayActivity"
             android:screenOrientation="sensorLandscape" />
-        <activity
-            android:name=".ui.activity.DetailActivity"
-            android:configChanges="orientation|screenSize"
-            android:screenOrientation="sensorLandscape" />
 
         <activity
             android:name=".ui.activity.SettingActivity"
-            android:screenOrientation="sensorLandscape" />
-
-        <activity
-            android:name=".ui.activity.CollectActivity"
             android:screenOrientation="sensorLandscape" />
 
         <receiver android:name=".receiver.CustomWebReceiver">

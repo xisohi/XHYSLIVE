@@ -14,8 +14,6 @@ import com.github.tvbox.osc.base.BaseLazyFragment;
 import com.github.tvbox.osc.bean.Movie;
 import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.event.ServerEvent;
-import com.github.tvbox.osc.ui.activity.CollectActivity;
-import com.github.tvbox.osc.ui.activity.DetailActivity;
 import com.github.tvbox.osc.ui.activity.LivePlayActivity;
 import com.github.tvbox.osc.ui.activity.SettingActivity;
 import com.github.tvbox.osc.ui.adapter.HomeHotVodAdapter;
@@ -142,7 +140,6 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
                     SourceBean sourceBean = ApiConfig.get().getSource(vod.sourceKey);
                     if(sourceBean != null){
                         bundle.putString("picture", vod.pic);
-                        jumpActivity(DetailActivity.class, bundle);
                     }
                 }
             }
@@ -287,8 +284,6 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
             }
         } else if (v.getId() == R.id.tvSetting) {
             jumpActivity(SettingActivity.class);
-        } else if (v.getId() == R.id.tvFavorite) {
-            jumpActivity(CollectActivity.class);
         }
     }
 
