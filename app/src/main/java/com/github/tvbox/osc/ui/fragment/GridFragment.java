@@ -13,25 +13,18 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.tvbox.osc.R;
-import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.base.BaseLazyFragment;
 import com.github.tvbox.osc.bean.AbsXml;
 import com.github.tvbox.osc.bean.Movie;
 import com.github.tvbox.osc.bean.MovieSort;
-import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.event.RefreshEvent;
-import com.github.tvbox.osc.ui.activity.DetailActivity;
-import com.github.tvbox.osc.ui.activity.SearchActivity;
 import com.github.tvbox.osc.ui.adapter.GridAdapter;
 import com.github.tvbox.osc.ui.adapter.GridFilterKVAdapter;
 import com.github.tvbox.osc.ui.dialog.GridFilterDialog;
 import com.github.tvbox.osc.ui.tv.widget.LoadMoreView;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
-import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.ImgUtil;
-import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
-import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7GridLayoutManager;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
@@ -39,13 +32,10 @@ import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
 import java.util.ArrayList;
 import java.util.Stack;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * @author pj567
@@ -235,15 +225,6 @@ public class GridFragment extends BaseLazyFragment {
                             changeView(video.id,false);
                         }
                     }
-                    else{
-                        if(video.id == null || video.id.isEmpty() || video.id.startsWith("msearch:")){
-                            // 直接跳转到普通搜索页面，不再判断聚合搜索模式
-                            jumpActivity(SearchActivity.class, bundle);
-                        }else {
-                            bundle.putString("picture", video.pic);
-                            jumpActivity(DetailActivity.class, bundle);
-                        }
-                    }
                 }
             }
         });
@@ -257,8 +238,6 @@ public class GridFragment extends BaseLazyFragment {
                     bundle.putString("id", video.id);
                     bundle.putString("sourceKey", video.sourceKey);
                     bundle.putString("title", video.name);
-                    // 改为跳转到普通搜索页面
-                    jumpActivity(SearchActivity.class, bundle);
                 }
                 return true;
             }

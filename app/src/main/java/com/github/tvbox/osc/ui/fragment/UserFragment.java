@@ -1,7 +1,6 @@
 package com.github.tvbox.osc.ui.fragment;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.BounceInterpolator;
@@ -18,7 +17,6 @@ import com.github.tvbox.osc.event.ServerEvent;
 import com.github.tvbox.osc.ui.activity.CollectActivity;
 import com.github.tvbox.osc.ui.activity.DetailActivity;
 import com.github.tvbox.osc.ui.activity.LivePlayActivity;
-import com.github.tvbox.osc.ui.activity.SearchActivity;
 import com.github.tvbox.osc.ui.activity.SettingActivity;
 import com.github.tvbox.osc.ui.adapter.HomeHotVodAdapter;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
@@ -102,12 +100,7 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
         return R.layout.fragment_user;
     }
 
-    private void jumpSearch(Movie.Video vod){
-        Intent newIntent = new Intent(mContext, SearchActivity.class);
-        newIntent.putExtra("title", vod.name);
-        newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        mActivity.startActivity(newIntent);
-    }
+
 
     private ImgUtil.Style style;
 
@@ -150,11 +143,7 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
                     if(sourceBean != null){
                         bundle.putString("picture", vod.pic);
                         jumpActivity(DetailActivity.class, bundle);
-                    } else {
-                        jumpSearch(vod);
                     }
-                } else {
-                    jumpSearch(vod);
                 }
             }
         });
@@ -172,8 +161,7 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
                 } else {
                     Bundle bundle = new Bundle();
                     bundle.putString("title", vod.name);
-                    // 改为跳转到普通搜索页面
-                    jumpActivity(SearchActivity.class, bundle);
+
                 }
                 return true;
             }
@@ -297,8 +285,6 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
             } else {
                 jumpActivity(LivePlayActivity.class);
             }
-        } else if (v.getId() == R.id.tvSearch) {
-            jumpActivity(SearchActivity.class);
         } else if (v.getId() == R.id.tvSetting) {
             jumpActivity(SettingActivity.class);
         } else if (v.getId() == R.id.tvFavorite) {

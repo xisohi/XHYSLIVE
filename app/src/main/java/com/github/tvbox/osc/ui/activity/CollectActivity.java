@@ -121,11 +121,6 @@ public class CollectActivity extends BaseActivity {
                             bundle.putString("sourceKey", vodInfo.sourceKey);
                             bundle.putString("picture", vodInfo.pic);
                             jumpActivity(DetailActivity.class, bundle);
-                        } else {
-                            Intent newIntent = new Intent(mContext, SearchActivity.class);
-                            newIntent.putExtra("title", vodInfo.name);
-                            newIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            startActivity(newIntent);
                         }
                     }
                 }

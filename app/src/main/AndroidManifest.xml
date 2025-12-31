@@ -50,14 +50,6 @@
             android:name=".ui.activity.DetailActivity"
             android:configChanges="orientation|screenSize"
             android:screenOrientation="sensorLandscape" />
-        <activity
-            android:name=".ui.activity.PlayActivity"
-            android:configChanges="orientation|screenSize"
-            android:screenOrientation="sensorLandscape" />
-        <activity
-            android:name=".ui.activity.SearchActivity"
-            android:windowSoftInputMode="stateHidden|adjustResize"
-            android:screenOrientation="sensorLandscape" />
 
         <activity
             android:name=".ui.activity.SettingActivity"
@@ -67,11 +59,6 @@
             android:name=".ui.activity.CollectActivity"
             android:screenOrientation="sensorLandscape" />
 
-        <receiver android:name=".receiver.SearchReceiver">
-            <intent-filter>
-                <action android:name="android.content.movie.search.Action" />
-            </intent-filter>
-        </receiver>
         <receiver android:name=".receiver.CustomWebReceiver">
             <intent-filter>
                 <action android:name="android.content.movie.custom.web.Action" />

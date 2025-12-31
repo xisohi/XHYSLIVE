@@ -2,15 +2,12 @@ package com.github.tvbox.osc.util;
 
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.bean.SourceBean;
-import com.github.tvbox.osc.ui.activity.SearchActivity;
 import com.orhanobut.hawk.Hawk;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
-import java.util.Iterator;
 
 public class SearchHelper {
 
@@ -62,7 +59,6 @@ public class SearchHelper {
             if (mCheckSourcesForApi == null) mCheckSourcesForApi = new HashMap<>();
             mCheckSourcesForApi.put(api, mCheckSources);
         }
-        SearchActivity.setCheckedSourcesForSearch(mCheckSources);
         Hawk.put(HawkConfig.SOURCES_FOR_SEARCH, mCheckSourcesForApi);
     }
 
